@@ -3,26 +3,29 @@ import { useEffect, useRef, useState } from "react";
 function App() {
   const [status, setStatus] = useState("");
   const [files, setFiles] = useState([]);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const fileInputRef = useRef(null);
 
-  const API_URL = "YOUR_API_GATEWAY_URL_HERE";
-  const API_KEY = "super-secret-student-key";
-
-  const fetchFiles = async () => {
-    try {
-      const res = await fetch(`${API_URL}/files`, {
-        headers: { "x-api-key": API_KEY },
-      });
-      const data = await res.json();
-      setFiles(data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  const API_URL = import.meta.env.VITE_API_URL;
+  const API_KEY = import.meta.env.VITE_API_KEY;
 
   useEffect(() => {
-    fetchFiles();
-  }, []);
+    const fetchFiles = async () => {
+      try {
+        const res = await fetch(`${API_URL}/files`, {
+          headers: { "x-api-key": API_KEY },
+        });
+        const data = await res.json();
+        setFiles(data);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    if (API_URL && API_KEY) {
+      fetchFiles();
+    }
+  }, [API_URL, API_KEY, refreshTrigger]);
 
   const handleClearSelection = () => {
     if (fileInputRef.current) {
@@ -71,7 +74,7 @@ function App() {
 
       setStatus("Upload Complete!");
       fileInputRef.current.value = "";
-      fetchFiles();
+      setRefreshTrigger((prev) => prev + 1);
     } catch (err) {
       setStatus("Error: " + err.message);
     }
@@ -87,7 +90,7 @@ function App() {
         headers: { "Content-Type": "application/json", "x-api-key": API_KEY },
         body: JSON.stringify({ newFilename }),
       });
-      fetchFiles();
+      setRefreshTrigger((prev) => prev + 1);
     } catch (err) {
       alert("Rename failed.");
     }
@@ -102,9 +105,7 @@ function App() {
         headers: { "Content-Type": "application/json", "x-api-key": API_KEY },
         body: JSON.stringify({ s3Key }),
       });
-      setFiles((prevFiles) =>
-        prevFiles.filter((file) => file.fileId !== fileId),
-      );
+      setRefreshTrigger((prev) => prev + 1);
     } catch (err) {
       alert("Delete failed.");
     }
@@ -126,7 +127,11 @@ function App() {
                 type="file"
                 ref={fileInputRef}
                 disabled={isAtLimit}
-                className={`block w-full text-sm text-gray-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold transition-colors ${isAtLimit ? "file:bg-gray-100 file:text-gray-400 cursor-not-allowed opacity-60" : "file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"}`}
+                className={`block w-full text-sm text-gray-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold transition-colors ${
+                  isAtLimit
+                    ? "file:bg-gray-100 file:text-gray-400 cursor-not-allowed opacity-60"
+                    : "file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
+                }`}
               />
               <button
                 onClick={handleClearSelection}
@@ -140,14 +145,20 @@ function App() {
             <button
               onClick={handleUpload}
               disabled={isAtLimit}
-              className={`w-full max-w-md font-bold py-3 px-4 rounded-lg transition duration-200 shadow-sm ${isAtLimit ? "bg-gray-400 cursor-not-allowed text-gray-100" : "bg-blue-600 hover:bg-blue-700 text-white"}`}
+              className={`w-full max-w-md font-bold py-3 px-4 rounded-lg transition duration-200 shadow-sm ${
+                isAtLimit
+                  ? "bg-gray-400 cursor-not-allowed text-gray-100"
+                  : "bg-blue-600 hover:bg-blue-700 text-white"
+              }`}
             >
               {isAtLimit ? "Storage Full (Max 3 Files)" : "Upload File"}
             </button>
 
             {status && (
               <p
-                className={`text-sm font-medium mt-2 ${status.includes("Error") ? "text-red-500" : "text-green-600"}`}
+                className={`text-sm font-medium mt-2 ${
+                  status.includes("Error") ? "text-red-500" : "text-green-600"
+                }`}
               >
                 {status}
               </p>
