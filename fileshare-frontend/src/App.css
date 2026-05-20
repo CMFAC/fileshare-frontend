@@ -1,0 +1,43 @@
+#root {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #f0f2f5;
+  font-family: Arial, sans-serif;
+}
+
+.card {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  width: 320px;
+}
+
+input[type="file"] {
+  margin: 1.5rem 0;
+  width: 100%;
+}
+
+button {
+  background: #0070f3;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  width: 100%;
+}
+
+button:hover {
+  background: #005bb5;
+}
+
+.status {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  color: #333;
+}
