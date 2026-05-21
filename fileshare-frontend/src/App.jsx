@@ -59,7 +59,7 @@ function App() {
       return;
     }
 
-    setStatus("1/3 Requesting secure link...");
+    setStatus("Requesting secure link...");
 
     try {
       const res = await fetch(`${API_URL}/request-upload`, {
@@ -74,7 +74,7 @@ function App() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
 
-      setStatus("2/3 Uploading directly to S3...");
+      setStatus("Uploading directly to S3...");
 
       await fetch(data.uploadUrl, {
         method: "PUT",
@@ -82,7 +82,7 @@ function App() {
         body: file,
       });
 
-      setStatus("3/3 Notifying backend...");
+      setStatus("Notifying backend...");
 
       await fetch(`${API_URL}/upload-complete`, {
         method: "POST",
@@ -129,33 +129,11 @@ function App() {
     }
   };
 
-  const handleShareLink = () => {
-    navigator.clipboard.writeText(window.location.href);
-    alert("Transfer link copied! Send it to your friend.");
-  };
-
   const isAtLimit = files.length >= 3;
 
   return (
     <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto space-y-8">
-        <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl flex justify-between items-center shadow-sm">
-          <div>
-            <p className="text-sm text-blue-800 font-semibold">
-              Your Secure Transfer Link
-            </p>
-            <p className="text-xs text-blue-600 truncate max-w-[200px] sm:max-w-md">
-              {window.location.href}
-            </p>
-          </div>
-          <button
-            onClick={handleShareLink}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors shadow-sm"
-          >
-            Copy Link
-          </button>
-        </div>
-
         <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
           <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">
             Upload Files
@@ -235,6 +213,18 @@ function App() {
                   </span>
 
                   <div className="flex flex-wrap gap-2 w-full md:w-auto justify-end">
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(file.downloadUrl);
+                        alert(
+                          "Direct document link copied! (Secure link valid for 1 hour)",
+                        );
+                      }}
+                      className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded text-sm font-medium transition duration-200 shadow-sm"
+                    >
+                      Copy Link
+                    </button>
+
                     <button
                       onClick={() => handleRename(file.fileId, file.filename)}
                       className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium transition duration-200 shadow-sm"
