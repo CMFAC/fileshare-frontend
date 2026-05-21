@@ -9,10 +9,22 @@ function App() {
   const API_URL = import.meta.env.VITE_API_URL;
   const API_KEY = import.meta.env.VITE_API_KEY;
 
+  const [transferId] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    let currentTransferId = params.get("transfer");
+
+    if (!currentTransferId) {
+      currentTransferId = crypto.randomUUID();
+      window.history.replaceState(null, "", `?transfer=${currentTransferId}`);
+    }
+
+    return currentTransferId;
+  });
+
   useEffect(() => {
     const fetchFiles = async () => {
       try {
-        const res = await fetch(`${API_URL}/files`, {
+        const res = await fetch(`${API_URL}/files?transferId=${transferId}`, {
           headers: { "x-api-key": API_KEY },
         });
         const data = await res.json();
@@ -22,10 +34,10 @@ function App() {
       }
     };
 
-    if (API_URL && API_KEY) {
+    if (API_URL && API_KEY && transferId) {
       fetchFiles();
     }
-  }, [API_URL, API_KEY, refreshTrigger]);
+  }, [API_URL, API_KEY, refreshTrigger, transferId]);
 
   const handleClearSelection = () => {
     if (fileInputRef.current) {
@@ -35,7 +47,9 @@ function App() {
 
   const handleUpload = async () => {
     if (files.length >= 3) {
-      alert("Storage full! You can only store a maximum of 3 files.");
+      alert(
+        "Storage full! You can only store a maximum of 3 files per transfer.",
+      );
       return;
     }
 
@@ -51,7 +65,11 @@ function App() {
       const res = await fetch(`${API_URL}/request-upload`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-api-key": API_KEY },
-        body: JSON.stringify({ filename: file.name, fileType: file.type }),
+        body: JSON.stringify({
+          filename: file.name,
+          fileType: file.type,
+          transferId,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
@@ -111,14 +129,36 @@ function App() {
     }
   };
 
+  const handleShareLink = () => {
+    navigator.clipboard.writeText(window.location.href);
+    alert("Transfer link copied! Send it to your friend.");
+  };
+
   const isAtLimit = files.length >= 3;
 
   return (
     <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto space-y-8">
+        <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl flex justify-between items-center shadow-sm">
+          <div>
+            <p className="text-sm text-blue-800 font-semibold">
+              Your Secure Transfer Link
+            </p>
+            <p className="text-xs text-blue-600 truncate max-w-[200px] sm:max-w-md">
+              {window.location.href}
+            </p>
+          </div>
+          <button
+            onClick={handleShareLink}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors shadow-sm"
+          >
+            Copy Link
+          </button>
+        </div>
+
         <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
           <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">
-            My Cloud Drive
+            Upload Files
           </h2>
 
           <div className="flex flex-col items-center gap-4">
@@ -151,7 +191,9 @@ function App() {
                   : "bg-blue-600 hover:bg-blue-700 text-white"
               }`}
             >
-              {isAtLimit ? "Storage Full (Max 3 Files)" : "Upload File"}
+              {isAtLimit
+                ? "Transfer Full (Max 3 Files)"
+                : "Add File to Transfer"}
             </button>
 
             {status && (
@@ -168,18 +210,18 @@ function App() {
 
         <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
           <h3 className="text-xl font-bold text-gray-800 mb-6 border-b pb-2">
-            Stored Files
+            Files in this Transfer
           </h3>
 
           <div className="flex justify-between items-center mb-4">
             <span className="text-sm font-medium text-gray-500">
-              Storage Used: {files.length} / 3
+              Transfer limit: {files.length} / 3
             </span>
           </div>
 
           {files.length === 0 ? (
             <p className="text-gray-500 text-center py-8">
-              No files uploaded yet. Add some files above!
+              No files in this transfer yet. Add some above!
             </p>
           ) : (
             <ul className="divide-y divide-gray-100">
@@ -208,16 +250,6 @@ function App() {
                     >
                       Download
                     </a>
-
-                    <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(file.downloadUrl);
-                        alert("Secure link copied to clipboard!");
-                      }}
-                      className="bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded text-sm font-medium transition duration-200 shadow-sm"
-                    >
-                      Copy Link
-                    </button>
 
                     <button
                       onClick={() => handleDelete(file.fileId, file.s3Key)}
